@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<pre-dex-items>
+
+    <item
+        dex="C:\Users\neriwasabiseijin\iplab\Paint3PointTouch\app\build\intermediates\pre-dexed\debug\internal_impl-21.0.0-b030399e18c118e037f93e2497b6d7cdc47c0c98.jar"
+        jar="C:\Users\neriwasabiseijin\iplab\Paint3PointTouch\app\build\intermediates\exploded-aar\com.android.support\support-v4\21.0.0\libs\internal_impl-21.0.0.jar"
+        jumboMode="false"
+        revision="21.0.2"
+        sha1="1609e6d42d0480b0f4188e2c29f75388fa12a8f0"/>
+    <item
+        dex="C:\Users\neriwasabiseijin\iplab\Paint3PointTouch\app\build\intermediates\pre-dexed\debug\classes-58060001c3a906a6811e776fd0996815d442f0a8.jar"
+        jar="C:\Users\neriwasabiseijin\iplab\Paint3PointTouch\app\build\intermediates\exploded-aar\com.android.support\support-v4\21.0.0\classes.jar"
+        jumboMode="false"
+        revision="21.0.2"
+        sha1="686344a780033e4ba22b926cd225f8d4941247e6"/>
+    <item
+        dex="C:\Users\neriwasabiseijin\iplab\Paint3PointTouch\app\build\intermediates\pre-dexed\debug\support-annotations-21.0.0-b62add2d2c574fd4209236d1ab20ffc71f0243c7.jar"
+        jar="C:\Program Files\androidSDK\extras\android\m2repository\com\android\support\support-annotations\21.0.0\support-annotations-21.0.0.jar"
+        jumboMode="false"
+        revision="21.0.2"
+        sha1="1a578b9607b36266c63d43a4fa0ab5664dbe911e"/>
+    <item
+        dex="C:\Users\neriwasabiseijin\iplab\Paint3PointTouch\app\build\intermediates\pre-dexed\debug\classes-4fc4979ecb8e88c1d96256dd1e480ed191253f98.jar"
+        jar="C:\Users\neriwasabiseijin\iplab\Paint3PointTouch\app\build\intermediates\exploded-aar\com.android.support\appcompat-v7\21.0.0\classes.jar"
+        jumboMode="false"
+        revision="21.0.2"
+        sha1="95fd37732ec852e99f07eeb516a3650172f1d136"/>
+
+</pre-dex-items>

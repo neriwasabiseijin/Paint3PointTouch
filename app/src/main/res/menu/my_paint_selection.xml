@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:compat="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.iplab.neriwasabiseijin.paint3pointtouch" >
+
+    <item
+        android:id="@+id/menu_copy"
+        android:orderInCategory="10"
+        android:title="@string/menu_copy"
+        compat:showAsAction="always"
+        android:icon="@drawable/ic_menu_copy_holo_dark" />
+
+    <item
+        android:id="@+id/menu_cut"
+        android:orderInCategory="9"
+        android:title="@string/menu_cut"
+        compat:showAsAction="always"
+        android:icon="@drawable/ic_menu_cut_holo_dark" />
+
+    <item
+        android:id="@+id/menu_paste"
+        android:orderInCategory="8"
+        android:title="@string/menu_paste"
+        compat:showAsAction="always"
+        android:icon="@drawable/ic_menu_paste_holo_dark" />
+
+</menu>
