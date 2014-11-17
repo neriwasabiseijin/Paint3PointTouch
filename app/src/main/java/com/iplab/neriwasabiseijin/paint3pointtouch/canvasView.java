@@ -18,7 +18,7 @@ import android.view.View;
  */
 public class canvasView extends View {
     // 何点タッチで選択を起動するか
-    static int HOLDFINGER = 3;
+    static final int HOLDFINGER = 3;
 
     // タッチ位置
     private PointF touchPos = new PointF(0f, 0f);
@@ -42,6 +42,13 @@ public class canvasView extends View {
     private Canvas selectionCvs;
     private Paint selectionPen = new Paint();
 
+    // コピペ用
+    private Paint pasteRectPen = new Paint();
+    private Bitmap copyBitmap;
+    private Canvas copyCvs;
+    private int [] copyPixels = null;
+    private RectF pasteRect = new RectF(0f, 0f, 0f, 0f);
+
     // 範囲選択後やペースト後の範囲を移動できるかどうか
     private boolean frameMovementFlag = false;
 
@@ -50,6 +57,7 @@ public class canvasView extends View {
 
         setPen();
         setSelectionPen();
+        setPasteRectPen();
 
         mPointerID = new int[HOLDFINGER];
         candidateTouchStart = new PointF[HOLDFINGER];
@@ -69,7 +77,23 @@ public class canvasView extends View {
         }
 
         // 範囲選択の枠
-        canvas.drawBitmap(selectionBitmap, 0, 0, null);
+        if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION) {
+            canvas.drawBitmap(selectionBitmap, 0, 0, null);
+        }
+
+        // ペースト範囲の枠
+        if(PaintActivity.paintMode == PaintActivity.MODE_PASTE){
+            setPasteRectPen();
+            pasteRectPen.setColor(Color.argb(255, 255, 255, 255));
+            pasteRectPen.setStyle(Paint.Style.FILL);
+            canvas.drawRect(pasteRect,pasteRectPen);
+            canvas.drawBitmap(copyBitmap, pasteRect.left, pasteRect.top, null);
+            pasteRectPen.setColor(Color.argb(128,180,50,50));
+            canvas.drawRect(pasteRect,pasteRectPen);
+            pasteRectPen.setColor(Color.argb(255,180,50,50));
+            pasteRectPen.setStyle(Paint.Style.STROKE);
+            canvas.drawRect(pasteRect,pasteRectPen);
+        }
     }
 
     @Override
@@ -80,6 +104,7 @@ public class canvasView extends View {
         cvs = new Canvas(bitmap);
         selectionBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         selectionCvs = new Canvas(selectionBitmap);
+        setCopyBitmap(w,h);
     }
 
     @Override
@@ -106,8 +131,21 @@ public class canvasView extends View {
                             moveEnd = new PointF(-1f, -1f);
                             selectionCvs.drawColor(0, PorterDuff.Mode.CLEAR);
                             PaintActivity.paintMode = PaintActivity.MODE_DRAW;
-                            invalidate();
                             frameMovementFlag = false;
+                            invalidate();
+                            return false;
+                        }
+                    }
+                }else if(PaintActivity.paintMode == PaintActivity.MODE_PASTE){
+                    if(frameMovementFlag){
+                        if(pasteRect.contains(touchPos.x, touchPos.y)){
+                            beforeTouchMove = touchPos;
+                        }else{
+                            paste();
+                            PaintActivity.paintMode = PaintActivity.MODE_DRAW;
+                            frameMovementFlag = false;
+                            invalidate();
+                            return false;
                         }
                     }
                 }
@@ -118,6 +156,7 @@ public class canvasView extends View {
                 if (count == HOLDFINGER) {
                     if(PaintActivity.paintMode == PaintActivity.MODE_DRAW || PaintActivity.paintMode == PaintActivity.MODE_ERASE) {
                         PaintActivity.paintMode = PaintActivity.MODE_SELECTION;
+                        return false; // 上のビューにタッチイベントを流す
                     }
                 }
                 break;
@@ -132,6 +171,9 @@ public class canvasView extends View {
                     }else if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION){
                         selectionRect = setSelectionRect();
                         drawSelectionRect();
+                    }else if(PaintActivity.paintMode == PaintActivity.MODE_PASTE){
+                        pasteRect = setPasteRect();
+                        invalidate();
                     }
                 }
                 break;
@@ -282,6 +324,112 @@ public class canvasView extends View {
         invalidate();
     }
 
-    public void copyBitmap(){}
-    public void pasteBitmap(){}
+    public void setPasteRectPen(){
+        pasteRectPen = new Paint();
+        pasteRectPen.setColor(Color.argb(255,180,50,50));
+        pasteRectPen.setStrokeWidth((4));
+        pasteRectPen.setAntiAlias(true);
+        pasteRectPen.setStyle(Paint.Style.STROKE);
+        pasteRectPen.setStrokeCap(Paint.Cap.ROUND);
+        pasteRectPen.setStrokeJoin(Paint.Join.ROUND);
+    }
+    public void setCopyBitmap(int w, int h){
+        copyBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        copyCvs = new Canvas(copyBitmap);
+    }
+    public void copyBitmap(){
+        int top = (int)selectionRect.top;
+        int bottom = (int)selectionRect.bottom;
+        int left = (int)selectionRect.left;
+        int right = (int)selectionRect.right;
+        if(top < 0){top=0;}
+        if(bottom > bitmap.getHeight()){bottom=bitmap.getHeight();}
+        if(left < 0){left=0;}
+        if(right > bitmap.getWidth()){right=bitmap.getWidth();}
+
+        setCopyBitmap(right - left, bottom - top);
+        pasteRect = new RectF(0, 0, right-left, bottom-top);
+
+
+        // pixelsに現在のbitmapを全コピー，一部をcopyPixelsにコピーする．
+        int[] pixels = new int[bitmap.getWidth() * bitmap.getHeight()];
+        bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        copyPixels = new int[copyBitmap.getWidth() * copyBitmap.getHeight()];
+
+        for(int y=top, tmpNum=0; y<bottom; y++){
+            for(int x=left; x<right; x++){
+                int pos = x + y*bitmap.getWidth();
+                copyPixels[tmpNum] = pixels[pos];
+                tmpNum++;
+            }
+        }
+    }
+    public void pasteBitmap(){
+        if(copyPixels != null) {
+            frameMovementFlag = true;
+
+            copyBitmap.setPixels(copyPixels, 0, copyBitmap.getWidth(), 0, 0, copyBitmap.getWidth(), copyBitmap.getHeight());
+
+            pasteRect = new RectF(0,0, pasteRect.width(), pasteRect.height());
+            moveStart = new PointF(-1f, -1f);
+            moveEnd = new PointF(-1f, -1f);
+            selectionCvs.drawColor(0, PorterDuff.Mode.CLEAR);
+
+            PaintActivity.paintMode = PaintActivity.MODE_PASTE;
+
+            invalidate();
+        }
+    }
+    public void paste(){
+        bitmap.setPixels(copyPixels, 0, (int)pasteRect.width(), (int)pasteRect.left, (int)pasteRect.top, (int)pasteRect.width(), (int)pasteRect.height());
+        /*
+        int[] pixels = new int[bitmap.getWidth() * bitmap.getHeight()];
+        bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+        for(int y=(int)pasteRect.top, tmpNum=0; y<(int)pasteRect.bottom; y++){
+            for(int x=(int)pasteRect.left; x<(int)pasteRect.right; x++){
+                int pos = x + y*bitmap.getWidth();
+                if(copyPixels[tmpNum] != Color.WHITE || copyPixels[tmpNum] != Color.alpha(0)){
+                    pixels[pos] = copyPixels[tmpNum];
+                }
+                tmpNum++;
+            }
+        }
+
+        bitmap.setPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        */
+    }
+
+    public RectF setPasteRect(){
+        float left=0, right=0, top=0, bottom=0;
+
+        if(frameMovementFlag) { // 範囲選択後
+            PointF moveAmount = new PointF(touchPos.x - beforeTouchMove.x, touchPos.y - beforeTouchMove.y);
+            left = pasteRect.left + moveAmount.x;
+            right = pasteRect.right + moveAmount.x;
+            top = pasteRect.top + moveAmount.y;
+            bottom = pasteRect.bottom + moveAmount.y;
+
+            if(left < 0){
+                right = right - left;
+                left = 0;
+            }
+            if(top < 0){
+                bottom = bottom - top;
+                top = 0;
+            }
+            if(right > bitmap.getWidth()){
+                left = left - (right-bitmap.getWidth());
+                right = bitmap.getWidth();
+            }
+            if(bottom > bitmap.getHeight()){
+                top = top -(bottom-bitmap.getHeight());
+                bottom = bitmap.getHeight();
+            }
+
+            beforeTouchMove = touchPos;
+        }
+        return new RectF(left, top, right, bottom);
+    }
+
 }

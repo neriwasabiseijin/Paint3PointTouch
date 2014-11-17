@@ -78,7 +78,6 @@ public class PaintActivity extends ActionBarActivity {
                 Toast.makeText(this, "cut", Toast.LENGTH_SHORT).show();
                 break;
             case R.id.menu_paste:
-                //paintMode = MODE_PASTE;
                 Toast.makeText(this, "paste", Toast.LENGTH_SHORT).show();
                 cvsView.pasteBitmap();
                 break;
