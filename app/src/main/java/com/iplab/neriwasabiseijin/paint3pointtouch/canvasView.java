@@ -17,6 +17,12 @@ import android.view.View;
  * Created by neriwasabiseijin on 2014/10/26.
  */
 public class canvasView extends View {
+    final int CENTER = 0;
+    final int LEFT = 1;
+    final int RIGHT = 2;
+    final int OUTSIDE = 3;
+    private int nowPos = OUTSIDE;
+
     // 何点タッチで選択を起動するか
     static int HOLDFINGER = 3;
 
@@ -48,6 +54,12 @@ public class canvasView extends View {
     private Canvas copyCvs;
     private int [] copyPixels = null;
     private RectF pasteRect = new RectF(0f, 0f, 0f, 0f);
+
+    // コピーメニュー用
+    private int selectionFingerPointer = -1;
+    private PointF showMenuPos = new PointF(-1f, -1f);
+    private PointF totalMoveAmount = new PointF(0f,0f);
+    private boolean showMenuFlag = false;
 
     // 範囲選択後やペースト後の範囲を移動できるかどうか
     private boolean frameMovementFlag = false;
@@ -87,6 +99,7 @@ public class canvasView extends View {
         // 範囲選択の枠
         if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION) {
             canvas.drawBitmap(selectionBitmap, 0, 0, null);
+
         }
 
         // ペースト範囲の枠
@@ -124,9 +137,9 @@ public class canvasView extends View {
         touchPos = new PointF(ev.getX(), ev.getY());
         setMPointerID(ev, pointerId, action);
 
-        // 選択後再びマルチホールドすることによりメニューまたはジェスチャ
+        // 選択後の再マルチホールド時の処理
         if(PaintActivity.testMode == PaintActivity.TEST_MENU){
-            copyMenu(ev, pointerId, action);
+            if(!copyMenu(ev, pointerId, action)){return false;}
         }else if(PaintActivity.testMode == PaintActivity.TEST_GESTURE) {
             copyGesture(ev, pointerId, action);
         }
@@ -477,60 +490,199 @@ public class canvasView extends View {
         invalidate();
     }
 
-    public void copyMenu(MotionEvent ev, int pointerId, int action){
+    public boolean copyMenu(MotionEvent ev, int pointerId, int action){
         int count = ev.getPointerCount();
 
-        switch(action){
+        switch (action) {
             case MotionEvent.ACTION_DOWN:
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
-                if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION){
-                    if(count == HOLDFINGER){
-                        PaintActivity.tV.setText("CUT!");
-                        cutBitmap();
-                    }if(count == HOLDFINGER - 1){
-                        PaintActivity.tV.setText("COPY!!");
-                        copyBitmap();
+                if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION && !frameMovementFlag) {
+                    if (count == HOLDFINGER && selectionFingerPointer != -1) {
+                        int mPointerIndex = ev.findPointerIndex(selectionFingerPointer);
+                        showMenuPos = new PointF(ev.getX(mPointerIndex), ev.getY(mPointerIndex));
+                        showMenu((int) showMenuPos.x, (int) showMenuPos.y, CENTER);
+                        totalMoveAmount = new PointF(0f,0f);
                     }
                 }
-
                 break;
             case MotionEvent.ACTION_MOVE:
+                if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION && !frameMovementFlag) {
+                    if(count == HOLDFINGER && selectionFingerPointer != -1) {
+                        int mPointerIndex = ev.findPointerIndex(selectionFingerPointer);
+                        totalMoveAmount.x = (ev.getX(mPointerIndex) - showMenuPos.x);
+                        totalMoveAmount.y = (ev.getY(mPointerIndex) - showMenuPos.y);
+                        PaintActivity.tV.setText(totalMoveAmount.x+","+totalMoveAmount.y);
+
+                        if(totalMoveAmount.length()<=50f){
+                            showMenu((int) showMenuPos.x, (int) showMenuPos.y, CENTER);
+                        }else if (50f<totalMoveAmount.length() && totalMoveAmount.length()<180f){
+                            if(totalMoveAmount.x <0){
+                                showMenu((int) showMenuPos.x, (int) showMenuPos.y, LEFT);
+                            }else{
+                                showMenu((int) showMenuPos.x, (int) showMenuPos.y, RIGHT);
+                            }
+                        }else{
+                            showMenu((int) showMenuPos.x, (int) showMenuPos.y, OUTSIDE);
+                        }
+                    }
+
+
+                }
                 break;
             case MotionEvent.ACTION_POINTER_UP:
+                if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION && !frameMovementFlag) {
+                    if(selectionFingerPointer == -1) {
+                        int countFingers = 0;
+                        for (int i = 0; i < HOLDFINGER; i++) {
+                            if (mPointerID[i] != -1) {
+                                selectionFingerPointer = mPointerID[i];
+                                countFingers++;
+                            }
+                        }
+                        if (countFingers != 1) {
+                            selectionFingerPointer = -1;
+                        }
+                    }else{
+                        int notCount = 0;
+                        for (int i = 0; i < HOLDFINGER; i++) {
+                            if (mPointerID[i] != selectionFingerPointer) {
+                               notCount++;
+                            }
+                        }
+                        if(notCount == HOLDFINGER && showMenuFlag){
+                            selectionFingerPointer = -1;
+                            selectMenu();
+                            showMenuFlag = false;
+                            return false;
+                        }
+                    }
+                }
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
+                if(selectionFingerPointer != -1 && showMenuFlag) {
+                    selectMenu();
+                    selectionFingerPointer = -1;
+                    showMenuFlag = false;
+                    PaintActivity.tV.setText("CCC");
+                    return false;
+                }
+                selectionFingerPointer = -1;
+                break;
+
+        }
+
+        return true;
+    }
+
+    public void showMenu(int x,int y, int position){
+        int r1 = 50;
+        int r2 = 180;
+
+        nowPos = position;
+        showMenuFlag = true;
+
+        selectionCvs.drawColor(0, PorterDuff.Mode.CLEAR);
+        drawSelectionRect();
+
+        // 枠線
+        Paint menuPen = new Paint();
+        menuPen.setColor(Color.argb(255, 200, 30, 30));
+        menuPen.setStrokeWidth((4));
+        menuPen.setAntiAlias(true);
+
+        menuPen.setStyle(Paint.Style.FILL);
+        switch (position){
+            case CENTER:
+                menuPen.setColor(Color.argb(220, 200, 30, 30));
+                selectionCvs.drawArc(new RectF(x-r2, y-r2, x+r2, y+r2), -90, 180, true, menuPen);
+                menuPen.setColor(Color.argb(220,180,180,30));
+                selectionCvs.drawArc(new RectF(x-r2, y-r2, x+r2, y+r2), 90, 180, true, menuPen);
+                menuPen.setColor(Color.argb(220,130,130,180));
+                selectionCvs.drawCircle(x,y,r1,menuPen);
+                break;
+            case LEFT:
+                menuPen.setColor(Color.argb(220, 200, 30, 30));
+                selectionCvs.drawArc(new RectF(x-r2, y-r2, x+r2, y+r2), -90, 180, true, menuPen);
+                menuPen.setColor(Color.argb(250,250,250,80));
+                selectionCvs.drawArc(new RectF(x-r2, y-r2, x+r2, y+r2), 90, 180, true, menuPen);
+                menuPen.setColor(Color.argb(220,30,30,80));
+                selectionCvs.drawCircle(x,y,r1,menuPen);
+                break;
+            case RIGHT:
+                menuPen.setColor(Color.argb(250, 250, 80, 80));
+                selectionCvs.drawArc(new RectF(x-r2, y-r2, x+r2, y+r2), -90, 180, true, menuPen);
+                menuPen.setColor(Color.argb(220,180,180,30));
+                selectionCvs.drawArc(new RectF(x-r2, y-r2, x+r2, y+r2), 90, 180, true, menuPen);
+                menuPen.setColor(Color.argb(220,30,30,80));
+                selectionCvs.drawCircle(x,y,r1,menuPen);
+                break;
+            case OUTSIDE:
+                menuPen.setColor(Color.argb(220, 200, 30, 30));
+                selectionCvs.drawArc(new RectF(x-r2, y-r2, x+r2, y+r2), -90, 180, true, menuPen);
+                menuPen.setColor(Color.argb(220,180,180,30));
+                selectionCvs.drawArc(new RectF(x-r2, y-r2, x+r2, y+r2), 90, 180, true, menuPen);
+                menuPen.setColor(Color.argb(220,30,30,80));
+                selectionCvs.drawCircle(x,y,r1,menuPen);
                 break;
         }
+
+
+        menuPen.setStyle(Paint.Style.STROKE);
+        menuPen.setColor(Color.argb(255,200,30,30));
+        selectionCvs.drawCircle(x,y,r1,menuPen);
+        selectionCvs.drawCircle(x,y,r2,menuPen);
+
+        invalidate();
     }
+    public void selectMenu(){
+        switch (nowPos){
+            case LEFT:
+                copyBitmap();
+                break;
+            case RIGHT:
+                cutBitmap();
+                break;
+        }
+
+        moveStart = new PointF(-1f, -1f);
+        moveEnd = new PointF(-1f, -1f);
+        selectionCvs.drawColor(0, PorterDuff.Mode.CLEAR);
+        PaintActivity.paintMode = PaintActivity.MODE_DRAW;
+        frameMovementFlag = false;
+        invalidate();
+    }
+
+
     public void copyGesture(MotionEvent ev, int pointerId, int action){
         int count = ev.getPointerCount();
 
-        switch(action){
-            case MotionEvent.ACTION_DOWN:
-                break;
-            case MotionEvent.ACTION_POINTER_DOWN:
-                if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION){
-                    if(count == HOLDFINGER){
+        if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION) {
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    break;
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    if (count == HOLDFINGER) {
                         PaintActivity.tV.setText("CUT!");
                         cutBitmap();
-                    }if(count == HOLDFINGER - 1){
+                    }
+                    if (count == HOLDFINGER - 1) {
                         PaintActivity.tV.setText("COPY!!");
                         copyBitmap();
                     }
-                }
-
-                break;
-            case MotionEvent.ACTION_MOVE:
-                break;
-            case MotionEvent.ACTION_POINTER_UP:
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_CANCEL:
-                break;
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    break;
+                case MotionEvent.ACTION_POINTER_UP:
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    break;
+            }
         }
     }
+
 
 
 }
