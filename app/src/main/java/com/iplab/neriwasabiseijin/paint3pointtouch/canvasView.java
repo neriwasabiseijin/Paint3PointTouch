@@ -18,14 +18,14 @@ import android.view.View;
  */
 public class canvasView extends View {
     // 何点タッチで選択を起動するか
-    static final int HOLDFINGER = 3;
+    static int HOLDFINGER = 3;
 
     // タッチ位置
     private PointF touchPos = new PointF(0f, 0f);
 
     // マルチタッチ用
-    int[] mPointerID;
-    PointF[] candidateTouchStart; // 3点タッチの開始点候補
+    static int[] mPointerID;
+    static PointF[] candidateTouchStart; // 3点タッチの開始点候補
 
     // 描画用
     private Path path = null;
@@ -58,6 +58,14 @@ public class canvasView extends View {
         setPen();
         setSelectionPen();
         setPasteRectPen();
+    }
+
+    public void myinit(){
+        if(PaintActivity.testMode == PaintActivity.TEST_2FINGER){
+            canvasView.HOLDFINGER = 2;
+        }else{
+            canvasView.HOLDFINGER = 3;
+        }
 
         mPointerID = new int[HOLDFINGER];
         candidateTouchStart = new PointF[HOLDFINGER];
@@ -116,6 +124,13 @@ public class canvasView extends View {
         touchPos = new PointF(ev.getX(), ev.getY());
         setMPointerID(ev, pointerId, action);
 
+        // 選択後再びマルチホールドすることによりメニューまたはジェスチャ
+        if(PaintActivity.testMode == PaintActivity.TEST_MENU){
+            copyMenu(ev, pointerId, action);
+        }else if(PaintActivity.testMode == PaintActivity.TEST_GESTURE) {
+            copyGesture(ev, pointerId, action);
+        }
+
         switch(action){
             case MotionEvent.ACTION_DOWN:
                 if(PaintActivity.paintMode == PaintActivity.MODE_DRAW || PaintActivity.paintMode == PaintActivity.MODE_ERASE){
@@ -154,7 +169,8 @@ public class canvasView extends View {
             case MotionEvent.ACTION_POINTER_DOWN:
                 if(path != null){path = null;}
                 if (count == HOLDFINGER) {
-                    if(PaintActivity.paintMode == PaintActivity.MODE_DRAW || PaintActivity.paintMode == PaintActivity.MODE_ERASE) {
+                    if (PaintActivity.paintMode == PaintActivity.MODE_DRAW || PaintActivity.paintMode == PaintActivity.MODE_ERASE) {
+                        PaintActivity.tV.setText("SELECTION!");
                         PaintActivity.paintMode = PaintActivity.MODE_SELECTION;
                         return false; // 上のビューにタッチイベントを流す
                     }
@@ -197,7 +213,6 @@ public class canvasView extends View {
                 }
                 break;
         }
-
 
         return true;
     }
@@ -431,5 +446,91 @@ public class canvasView extends View {
         }
         return new RectF(left, top, right, bottom);
     }
+
+    public void cutBitmap(){
+        int top = (int)selectionRect.top;
+        int bottom = (int)selectionRect.bottom;
+        int left = (int)selectionRect.left;
+        int right = (int)selectionRect.right;
+        if(top < 0){top=0;}
+        if(bottom > bitmap.getHeight()){bottom=bitmap.getHeight();}
+        if(left < 0){left=0;}
+        if(right > bitmap.getWidth()){right=bitmap.getWidth();}
+
+        setCopyBitmap(right - left, bottom - top);
+        pasteRect = new RectF(0, 0, right-left, bottom-top);
+
+        // pixelsに現在のbitmapを全コピー，一部をcopyPixelsにコピーする．
+        int[] pixels = new int[bitmap.getWidth() * bitmap.getHeight()];
+        bitmap.getPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        copyPixels = new int[copyBitmap.getWidth() * copyBitmap.getHeight()];
+
+        for(int y=top, tmpNum=0; y<bottom; y++){
+            for(int x=left; x<right; x++){
+                int pos = x + y*bitmap.getWidth();
+                copyPixels[tmpNum] = pixels[pos];
+                pixels[pos] = Color.WHITE;
+                tmpNum++;
+            }
+        }
+        bitmap.setPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+        invalidate();
+    }
+
+    public void copyMenu(MotionEvent ev, int pointerId, int action){
+        int count = ev.getPointerCount();
+
+        switch(action){
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION){
+                    if(count == HOLDFINGER){
+                        PaintActivity.tV.setText("CUT!");
+                        cutBitmap();
+                    }if(count == HOLDFINGER - 1){
+                        PaintActivity.tV.setText("COPY!!");
+                        copyBitmap();
+                    }
+                }
+
+                break;
+            case MotionEvent.ACTION_MOVE:
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                break;
+        }
+    }
+    public void copyGesture(MotionEvent ev, int pointerId, int action){
+        int count = ev.getPointerCount();
+
+        switch(action){
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                if(PaintActivity.paintMode == PaintActivity.MODE_SELECTION){
+                    if(count == HOLDFINGER){
+                        PaintActivity.tV.setText("CUT!");
+                        cutBitmap();
+                    }if(count == HOLDFINGER - 1){
+                        PaintActivity.tV.setText("COPY!!");
+                        copyBitmap();
+                    }
+                }
+
+                break;
+            case MotionEvent.ACTION_MOVE:
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                break;
+        }
+    }
+
 
 }

@@ -16,4 +16,34 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="コピーメニュー表示"
+        android:id="@+id/button_Paint_menu"
+        android:layout_below="@+id/button_Paint"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="コピージェスチャ版"
+        android:id="@+id/button_Paint_gesture"
+        android:layout_below="@+id/button_Paint_menu"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2点で範囲選択"
+        android:id="@+id/button_Paint_2point"
+        android:layout_below="@+id/button_Paint_gesture"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+
+
 </RelativeLayout>

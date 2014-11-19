@@ -1,5 +1,6 @@
 package com.iplab.neriwasabiseijin.paint3pointtouch;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v7.app.ActionBar;
@@ -16,7 +17,14 @@ public class PaintActivity extends ActionBarActivity {
     static final int MODE_ERASE = 1;
     static final int MODE_SELECTION = 2;
     static final int MODE_PASTE = 3;
+
+    static final int TEST_NORMAL = 0;
+    static final int TEST_MENU = 1;
+    static final int TEST_GESTURE = 2;
+    static final int TEST_2FINGER = 3;
+
     static int paintMode = MODE_DRAW;
+    static int testMode = 0;
 
     ActionBar actionBar;
     Menu myMenu;
@@ -34,6 +42,9 @@ public class PaintActivity extends ActionBarActivity {
 
         cvsView = (canvasView)findViewById(R.id.canvasView);
         tV = (TextView)findViewById(R.id.textView1);
+
+        setTestMode();
+        tV.setText(testMode+"");
     }
 
     @Override
@@ -76,6 +87,7 @@ public class PaintActivity extends ActionBarActivity {
                 break;
             case R.id.menu_cut:
                 Toast.makeText(this, "cut", Toast.LENGTH_SHORT).show();
+                cvsView.cutBitmap();
                 break;
             case R.id.menu_paste:
                 Toast.makeText(this, "paste", Toast.LENGTH_SHORT).show();
@@ -113,5 +125,12 @@ public class PaintActivity extends ActionBarActivity {
         }
         Drawable bgDrawable = getApplicationContext().getResources().getDrawable(color);
         actionBar.setBackgroundDrawable(bgDrawable);
+    }
+
+    public void setTestMode(){
+        Intent intent = getIntent();
+        testMode = Integer.parseInt(intent.getStringExtra("MODE"));
+
+        cvsView.myinit();
     }
 }

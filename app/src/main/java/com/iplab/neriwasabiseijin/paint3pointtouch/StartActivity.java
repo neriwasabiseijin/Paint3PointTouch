@@ -23,13 +23,58 @@ public class StartActivity extends ActionBarActivity {
             public void onClick(View v){
                 // インテントのインスタンス生成
                 Intent intent = new Intent(StartActivity.this, PaintActivity.class);
-
                 // 値引き渡しの設定
-                // intent.putExtra("タグ", 値);
-
+                intent.putExtra("MODE", "0");
                 // 次の画面のアクティビティ起動
                 startActivity(intent);
+                // 現在のアクティビティ終了
+                StartActivity.this.finish();
+            }
 
+        });
+
+        btn = (Button)findViewById(R.id.button_Paint_menu);
+        btn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                // インテントのインスタンス生成
+                Intent intent = new Intent(StartActivity.this, PaintActivity.class);
+                // 値引き渡しの設定
+                intent.putExtra("MODE", "1");
+                // 次の画面のアクティビティ起動
+                startActivity(intent);
+                // 現在のアクティビティ終了
+                StartActivity.this.finish();
+            }
+
+        });
+
+        btn = (Button)findViewById(R.id.button_Paint_gesture);
+        btn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                // インテントのインスタンス生成
+                Intent intent = new Intent(StartActivity.this, PaintActivity.class);
+                // 値引き渡しの設定
+                intent.putExtra("MODE", "2");
+                // 次の画面のアクティビティ起動
+                startActivity(intent);
+                // 現在のアクティビティ終了
+                StartActivity.this.finish();
+            }
+
+        });
+
+        btn = (Button)findViewById(R.id.button_Paint_2point);
+        btn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                // インテントのインスタンス生成
+                Intent intent = new Intent(StartActivity.this, PaintActivity.class);
+                // 値引き渡しの設定
+                intent.putExtra("MODE", "3");
+                // 次の画面のアクティビティ起動
+                startActivity(intent);
                 // 現在のアクティビティ終了
                 StartActivity.this.finish();
             }
