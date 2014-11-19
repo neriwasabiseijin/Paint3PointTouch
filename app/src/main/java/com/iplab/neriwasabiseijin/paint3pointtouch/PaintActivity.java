@@ -88,6 +88,7 @@ public class PaintActivity extends ActionBarActivity {
             case R.id.menu_cut:
                 Toast.makeText(this, "cut", Toast.LENGTH_SHORT).show();
                 cvsView.cutBitmap();
+                changeActionBar();
                 break;
             case R.id.menu_paste:
                 Toast.makeText(this, "paste", Toast.LENGTH_SHORT).show();

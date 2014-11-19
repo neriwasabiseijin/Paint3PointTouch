@@ -487,6 +487,9 @@ public class canvasView extends View {
             }
         }
         bitmap.setPixels(pixels, 0, bitmap.getWidth(), 0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+        PaintActivity.paintMode = PaintActivity.MODE_DRAW;
+
         invalidate();
     }
 
